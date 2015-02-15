@@ -2,7 +2,6 @@
 using System.Web.Mvc;
 using SportsStore.Domain.Abstract;
 using SportsStore.Domain.Entities;
-using SportsStore.WebUI.Binders;
 using SportsStore.WebUI.Models;
 
 namespace SportsStore.WebUI.Controllers
