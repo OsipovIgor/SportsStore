@@ -86,7 +86,7 @@ namespace SportsStore.UnitTests
             // Arrange - create a product
             Product product = new Product {Name = "Test"};
             // Act - try to save the product
-            ActionResult result = target.Edit(product);
+            ActionResult result = target.Edit(product, null);
             // Assert - check that the repository was called
             mock.Verify(m => m.SaveProduct(product));
             // Assert - check the method result type
@@ -105,7 +105,7 @@ namespace SportsStore.UnitTests
             // Arrange - add an error to the model state
             target.ModelState.AddModelError("error", "error");
             // Act - try to save the product
-            ActionResult result = target.Edit(product);
+            ActionResult result = target.Edit(product, null);
             // Assert - check that the repository was not called
             mock.Verify(m => m.SaveProduct(It.IsAny<Product>()), Times.Never());
             // Assert - check the method result type
