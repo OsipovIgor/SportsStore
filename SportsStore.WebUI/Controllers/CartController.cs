@@ -2,56 +2,74 @@
 using System.Web.Mvc;
 using SportsStore.Domain.Abstract;
 using SportsStore.Domain.Entities;
+using SportsStore.WebUI.Binders;
 using SportsStore.WebUI.Models;
 
 namespace SportsStore.WebUI.Controllers
 {
     public class CartController : Controller
     {
-        private IProductRepository repository;
+        private readonly IProductRepository _repository;
+        private IOrderProcessor _orderProcessor;
 
-        public CartController(IProductRepository repo)
+        public CartController(IProductRepository repo, IOrderProcessor proc)
         {
-            repository = repo;
+            _repository = repo;
+            _orderProcessor = proc;
         }
 
-        public ViewResult Index(string returnUrl)
+        public ViewResult Index(Cart cart,string returnUrl)
         {
             return View(new CartIndexViewModel
             {
-                Cart = GetCart(),
+                Cart = cart,
                 ReturnUrl = returnUrl
             });
         }
 
-        public RedirectToRouteResult AddToCart(int productId, string returnUrl)
+        public RedirectToRouteResult AddToCart(Cart cart, int productId, string returnUrl)
         {
-            Product product = repository.Products.FirstOrDefault(p => p.ProductID == productId);
+            Product product = _repository.Products.FirstOrDefault(p => p.ProductID == productId);
             if (product != null)
-                GetCart().AddItem(product, 1);
+                cart.AddItem(product, 1);
             return RedirectToAction("Index", new { returnUrl });
         }
 
-        RedirectToRouteResult RemoveFromCart(int productId, string returnUrl)
+        public RedirectToRouteResult RemoveFromCart(Cart cart, int productId, string returnUrl)
         {
-            Product product = repository.Products.FirstOrDefault(p => p.ProductID == productId);
+            Product product = _repository.Products.FirstOrDefault(p => p.ProductID == productId);
             if (product != null)
             {
-                GetCart().RemoveLine(product);
+                cart.RemoveLine(product);
             }
             return RedirectToAction("Index", new { returnUrl });
         }
 
-        private Cart GetCart()
+        public PartialViewResult Summary(Cart cart)
         {
-            Cart cart = (Cart)Session["Cart"];
-
-            if (cart == null)
-            {
-                cart = new Cart();
-                Session["Cart"] = cart;
-            }
-            return cart;
+            return PartialView(cart);
         }
+
+        [HttpPost]
+        public ViewResult Checkout(Cart cart, ShippingDetails shippingDetails)
+        {
+            if (cart.Lines.Count() == 0)
+                ModelState.AddModelError("", "Sorry, your cart is empty!");
+
+            if (ModelState.IsValid)
+            {
+                _orderProcessor.ProcessOrder(cart, shippingDetails);
+                cart.Clear();
+                return View("Completed");
+            }
+
+            return View(shippingDetails);
+        }
+
+        public ViewResult Checkout()
+        {
+            return View(new ShippingDetails());
+        }
+
     }
 }
